@@ -1,0 +1,98 @@
+from __future__ import print_function
+import sys
+import ProcessExperimentsLibrary  # Import Library
+lib = ProcessExperimentsLibrary   # Give short name
+from optparse import OptionParser
+
+def latexTableHeader(minK, maxK) :
+    # Setup tabular
+    s = "\\begin{tabular}{r"       # \begin{tabular}{r
+    for K in range (minK,maxK+1) :      #
+        s += "|r"      # print |r for each name
+    
+    s += "} \\toprule\n"             # }\\ \hline finish line
+
+    # print the first row of header k || 2-way || 3-way ...|
+    s += "$n \downarrow$ $k \\rightarrow$ "
+    for K in range (minK,maxK+1) :
+        s += "& " + str(K) + "-Way"
+
+    s += "\\\\ \\midrule"       
+ 
+    return s
+
+
+    
+# Read from Command line
+parser = OptionParser()
+parser.add_option("-k", "--minK"  , dest="minK"          ,help="(Required) Min K to process", metavar="int")
+parser.add_option("-K", "--maxK"  , dest="maxK"          ,help="(Required) Max K to process", metavar="int")
+parser.add_option("-n", "--minN"  , dest="minN"          ,help="(Required) Min N to process", metavar="int")
+parser.add_option("-N", "--maxN"  , dest="maxN"          ,help="(Required) Max N to process", metavar="int")
+parser.add_option("-x", "--numExp", dest="numExperiments",help="(Required) Num experiments to process", metavar="int")
+parser.add_option("-f", "--file"  , dest="filename"      ,help="(Required) Filename to write to", metavar="str")
+
+(options, args) = parser.parse_args()
+
+if (options.minK == None or options.maxK == None or 
+    options.minN == None or options.maxN == None or 
+    options.numExperiments == None or options.filename == None) :    
+    parser.print_help()
+    print ("\n *** Error: Missing required parameters ***\n")
+    sys.exit(0)
+
+minK           = int(options.minK)
+maxK           = int(options.maxK)
+minN           = int(options.minN)
+maxN           = int(options.maxN)
+numExperiments = int(options.numExperiments)
+filename       = options.filename
+
+
+# Make sure parameters are entered
+print ("Min K        : " + str(minK))
+print ("Max K        : " + str(maxK))
+print ("Min N        : " + str(minN))
+print ("Max N        : " + str(maxN))
+print ("# Experiments: " + str(numExperiments))
+print ("Out Filename : " + filename)
+
+outFile = open(filename,"w")
+
+ALGORITHMS = ["ciw","ciwlc","moffit_rich","bsbc_IE50","bsbcp","rnp","snp"]
+
+ALG_NAMES = {"ciw"         : "CIW",\
+             "ciwlc"       : "CLC",\
+             "moffit_rich" : "MOF",\
+             "bsbc_IE50"   : "IBC",\
+             "bsbcp"       : "BCP",\
+             "rnp"         : "RNP",\
+             "snp"         : "SNP"}
+
+
+
+print(latexTableHeader(minK,maxK),file=outFile)
+
+# Data
+for N in range (minN,maxN+1) :                                            # for each n
+        
+    print ("   " + str(N),file=outFile,end=''),                                        # Print N value
+    for K in range (minK,maxK+1) :                                        # for each K value
+
+        minTime = float("inf")
+        minAlg = "ciw"
+        for i in range(len(ALGORITHMS)) :
+            alg = ALGORITHMS[i]
+            count = lib.countLines(lib.filename(K,N,alg,numExperiments))
+            if (count > 0) :
+                t = lib.processExperiment(lib.filename(K,N,alg,numExperiments),count)
+
+                if (t < minTime) :
+                    minTime = t
+                    minAlg = alg
+                                
+        print(" & " + ALG_NAMES[minAlg],file=outFile,end='')
+    print("\\\\",file=outFile)
+print(lib.latexTableFooter(),file=outFile)
+
+outFile.close()

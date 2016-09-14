@@ -1,0 +1,173 @@
+/*
+ * Bandwidth.cpp
+ *
+ *  Created on: May 8, 2012
+ *      Author: ethan
+ */
+
+#include <ilcplex/ilocplex.h>
+#include "PackingUtils.hpp"
+#include <assert.h>
+#include <algorithm>
+#include <sstream>
+#include <complex>   // for abs
+#include <algorithm> // for sort
+#include <iomanip>
+#include <iostream>
+#include <vector>
+#include <set>
+
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::vector;
+using std::set;
+
+using std::ostringstream;
+
+struct SetCoverProblem {
+  vector<int64_t> S;                 // The input set
+
+};
+
+set<uint64_t> createSet(uint64_t elements[], int n) {
+  set<uint64_t> theSet;
+
+  for (int i=0;i<n;i++) {
+    theSet.insert(elements[i]);
+  }
+  return theSet;
+}
+
+// Solve the n x n grid problem
+int main (int argc, char **argv)
+{
+  IloEnv   env;
+  IloModel model(env);
+
+  const int N = 10;
+
+  try {
+
+    // --------------------------------------------------------------
+    // Create the variables
+    // N Rows in our matrix of x_ij, this contains the bool variables
+    // x_ij means vertex i is mapped to index j in our linear order
+    // --------------------------------------------------------------
+
+    IloIntVarArray setVars(env);
+    IloExpr objective(env);
+
+    vector<set<uint64_t> > sets;
+
+    std::cerr << "FIX ME!" << endl;
+    exit(0);
+    // sets.push_back(createSet((uint64_t[2]) {1,2},2));
+    // sets.push_back(createSet((uint64_t[2]) {3,4},2));
+    // sets.push_back(createSet((uint64_t[2]) {5,6},2));
+    // sets.push_back(createSet((uint64_t[2]) {7,8},2));
+    // sets.push_back(createSet((uint64_t[2]) {9,10},2));
+    // sets.push_back(createSet((uint64_t[2]) {1,3},2));
+
+    vector<uint64_t> elements;
+    for (uint64_t i=0;i<10;i++) {
+      elements.push_back(i+1);
+    }
+
+    // Create variables, one var for each set
+    for (size_t i=0;i<sets.size();i++) {
+        ostringstream out; // Create variable
+        out << "set_" << i;
+        setVars.add(IloIntVar(env,0,1,out.str().c_str()));    // Create Var
+        objective += setVars[i];                              // Add to Objective
+    }
+
+    // Add constraints
+    for (size_t i=0;i<elements.size();i++) {
+      IloExpr expression(env);
+      for (size_t j=0;j<sets.size();j++) {
+        bool exists = sets[j].find(elements[i]) != sets[j].end();
+
+        if (exists) {
+          expression += setVars[j];
+
+        }
+      }
+      model.add(expression >= 1);
+    }
+
+    model.add(IloMinimize(env, objective));   // Add Objective Function
+
+   IloCplex cplex(model);   // Create cplex object
+
+   // ======================
+   // *** Set Parameters ***
+   // ======================
+   // Exact Solutions
+   cplex.setParam(IloCplex::EpInt, 0); // DON'T ALLOW Slightly Infeasible Integer Variables pg 276
+   //cplex.setParam(IloCplex::EpAGap,0); // Turn off optimality tolerance. pg 275
+   cplex.setParam(IloCplex::EpGap,0);  // Turn off optimality tolerance. pg 275
+   cplex.setParam(IloCplex::MIPEmphasis,IloCplex::MIPEmphasisOptimality);
+
+   // Multiple Solutions
+   cplex.setParam(IloCplex::SolnPoolIntensity,4);
+   cplex.setParam(IloCplex::PopulateLim,10000000);
+
+   // *** Solve ***
+   IloBool isSolved = cplex.solve();
+
+   // -------------
+   // Print Results
+   // -------------
+
+   cout << endl << endl  << "----------------- Model -----------------" << endl
+        << model
+        << endl << endl  << "----------------- Results -----------------" << endl;
+
+   for (int i=0;i<setVars.getSize();i++) {
+     cout << i << ": " << cplex.getValue(setVars[i]) << endl;
+   }
+
+   /*cout << "Solved      : " << isSolved << endl
+        << "Status      : " << cplex.getStatus() << endl
+        << "Cplex Status: " << cplex.getCplexStatus()<< endl
+        << "Objective   : " << (int64_t) cplex.getObjValue() << endl
+        << "# Solutions : " << cplex.getSolnPoolNsolns() << endl
+        << "-------------------------------------------" << endl << endl;*/
+    }
+  catch (IloException& e) {
+     cerr << "Concert exception caught: " << e << endl;
+  }
+  catch (...) {
+     cerr << "Unknown exception caught" << endl;
+  }
+  env.end(); // Destroy the environment
+
+  return 0;
+}  // END main
+
+
+
+
+
+/*
+ *
+    // alldifferent vars / constraints
+    for (int vertex1=0;vertex1<N-1;vertex1++) {
+      z[vertex1] = IloBoolVarArray(env,N);
+
+      for (int vertex2=vertex1+1;vertex2<N;vertex2++) {
+
+        // create variable
+        ostringstream out;
+        out << "z_" << vertex1 << "_" << vertex2;
+        z[vertex1][vertex2] = IloBoolVar(env,out.str().c_str());
+
+        // Add constraints
+        IloExpr expression1 = vertices[vertex1] - vertices[vertex2] + N * z[vertex1][vertex2];
+        IloExpr expression2 = vertices[vertex2] - vertices[vertex1] + N * (1-z[vertex1][vertex2]);
+        model.add(expression1 >= 1);
+        model.add(expression2 >= 1);
+      }
+    }
+ * */

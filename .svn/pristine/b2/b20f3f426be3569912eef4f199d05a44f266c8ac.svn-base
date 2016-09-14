@@ -1,0 +1,42 @@
+from __future__ import print_function
+from matplotlib.backends.backend_pdf import PdfPages
+import sys
+import os.path
+import matplotlib.pyplot as plt
+import numpy as np
+
+filename = '/home/ethan/workspace/BinPacking/script/output.pdf'
+# evenly sampled time at 200ms intervals
+
+RNP  = [57, 87, 385 , 590 , 1388, 1971]
+IRNP = [0 , 0 , .001, .011, .041, .061,1,2,8,28,70,693,917,2407,4079,6837]
+MOF  = [.000, .000, .000, .000, .000, .000, .001, .001, .003, .006, .012, .062, .022, .051, .099, .157, .232, .531, .747, 01, 1.39, 2.03, 3.27, 5.27, 9.25, 14.0, 21.9, 42.6, 56.5, 92.8, 141, 263, 362, 735, 1120, 1920, 2700, 4950, 8508, 12249, 18036]
+CIW  = [.004, .006, .007, .008, .025, .043, .099, .423, .640, .444, 1.02, 1.32, .283, .242, .254, .312, .395, .668, .960, 1.32, .404, .441, .630, .644, .840, .968, .913, 1.35, 1.42, 1.93, 2.32, 3.82, 5.28, 7.56, 8.02, 14.5, 14.4, 18.0, 23.7, 35.6, 42.0]
+ 
+while (len(RNP) < len(MOF)) :
+    RNP.append(None)
+
+while (len(IRNP) < len(MOF)) :
+    IRNP.append(None)
+
+X = range(20,20+len(MOF))
+
+pdf = PdfPages(filename) 
+plt.figure(figsize=(5,5))
+plt.subplot(1,1,1)
+plt.plot(X, RNP, 'ro')
+plt.plot(X, IRNP, 'g^')
+plt.plot(X, MOF, 'yD')
+plt.plot(X, CIW, 'b*')
+plt.axis([20, X[-1], 0, 18500])
+plt.yscale('log')
+#plt.legend(['RNP (IJCAI 09)', 'IRNP (IJCAI 11)', 'MOF (IJCAI 13)', 'CIW (AAAI 14)'], loc='upper left')
+plt.title('Timeline for k=10')
+print("Writing",filename)    
+pdf.savefig()
+plt.close()
+pdf.close()
+    
+
+
+ 

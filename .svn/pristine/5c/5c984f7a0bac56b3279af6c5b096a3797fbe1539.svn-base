@@ -1,0 +1,24 @@
+/*
+ * globals.hpp
+ *
+ *  Created on: Jan 21, 2013
+ *      Author: ethan
+ */
+
+#ifndef GLOBALS_HPP_
+#define GLOBALS_HPP_
+#include <limits>
+#include <string>
+#include <stdint.h>
+using std::string;
+
+
+
+// In general to mark an unset value
+const int       UNSET_INT       = std::numeric_limits<int>::max();
+const string    UNSET_STRING    = "";
+const uint32_t  UNSET_UINT32_T  = std::numeric_limits<uint32_t>::max();
+const uint64_t  UNSET_UINT64_T  = std::numeric_limits<uint64_t>::max();
+const double    UNSET_DOUBLE    = std::numeric_limits<double>::max();
+
+#endif /* GLOBALS_HPP_ */

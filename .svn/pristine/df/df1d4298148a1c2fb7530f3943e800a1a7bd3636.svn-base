@@ -1,0 +1,60 @@
+/*
+ * Schroeppel_Shamir.hpp
+ *
+ *  Created on: Oct 3, 2012
+ *      Author: ethan
+ */
+
+#ifndef SCHROEPPEL_SHAMIR_HALF_HPP_
+#define SCHROEPPEL_SHAMIR_HALF_HPP_
+
+#include "Schroeppel_Shamir.hpp"
+#include "SubsetSum.hpp"
+#include "../Heap.hpp"
+#include <vector>
+#include <deque>
+#include <algorithm>
+
+using std::vector;
+using std::deque;
+
+namespace ss {
+
+
+// ============================================================================
+// Schroeppel and Shamir Helper Functions
+// ============================================================================
+
+void initializeSetsHalf(const uint64_t S[MAXN], const int n,
+                           vector<SSSetNode> &a,vector<SSSetNode> &b);
+
+void initializeHeapHalf(const uint64_t S[MAXN], const int n,
+                       vector<SSSetNode> &a,vector<SSSetNode> &b,vector<SSSetNode> &c,vector<SSSetNode> &d,
+                       SSMinHeap &abheap, SSMaxHeap &cdheap, const uint64_t upper);
+
+void initializeHalf(const uint64_t S[MAXN], const int n,
+                       vector<SSSetNode> &a,vector<SSSetNode> &b,
+                       SSMinHeap &abheap, const uint64_t upper);
+
+
+// Pop the top element off of heap.
+// Then find the next element using the same element in a and the
+// next element in b. If there are no elements left in b for this a,
+// don't push anything on heap and return false. If there is an element
+// left, push the sum and return true;
+inline bool popPushNext(SSMinHeap &heap, const vector<uint64_t> &a, const vector<uint64_t> &b) {
+  size_t newX = heap.front().x;      // replace with next combination in this column
+  size_t newY = heap.front().y + 1;
+  heap.pop();
+  if (newY < b.size()) { // there is another element in this column
+    heap.push(SSHeapNode(newX, newY, a[newX] + b[newY]));
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+} // end namespace
+
+#endif /* SCHROEPPEL_SHAMIR_HPP_ */

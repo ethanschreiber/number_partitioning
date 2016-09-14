@@ -1,0 +1,402 @@
+/*
+ * DPMatrix.cpp
+ *
+ *  Created on: Oct 2, 2012
+ *      Author: ethan
+ */
+#include "DPMatrix.hpp"
+#include <iomanip>
+
+using std::cerr;
+using std::cout;
+using std::endl;
+
+namespace ss {
+
+
+
+
+// ============================================================================
+// DPMatrix
+// ============================================================================
+
+
+DPMatrix::DPMatrix(const uint64_t S[MAXN], int n,int minSubsetSum, int targetSubsetSum)
+: m_n(n), m_minSubsetSum(minSubsetSum), m_numSubsetSums(targetSubsetSum-minSubsetSum+1),m_targetSubsetSum(targetSubsetSum) {
+
+  m_matrix    = new uint64_t[n*m_numSubsetSums];
+  m_oneMatrix = new Bitset [n*m_numSubsetSums];
+  m_inUse = new bool[m_n];
+  for (int i=0;i<m_n;i++) {
+    m_inUse[i]=false;
+    m_S[i] = S[i];
+  }
+//  cout << "Min SS: " << minSubsetSum << endl
+//       << "Target: " << targetSubsetSum << endl << endl;
+  fillMatrix(S,minSubsetSum, targetSubsetSum);
+}
+
+DPMatrix::~DPMatrix() {
+  delete [] m_matrix;
+  delete [] m_oneMatrix;
+  delete [] m_inUse;
+}
+
+
+void DPMatrix::fillMatrix(const uint64_t S[MAXN], int minSubsetSum, const int targetSubsetSum) {
+
+  for (int i=0;i<m_n*m_numSubsetSums;i++) {
+    m_matrix[i] = 0;
+  }
+
+  // *** Fill m_matrix ***
+  setCount(0,S[0],1);  // Set initial value to 1
+
+  for (int k=1;k<m_n;k++) {  // for each element in S
+
+    // Iterate from min subset sum to target subset sum
+    for (int subsetSum = minSubsetSum;subsetSum<=targetSubsetSum;subsetSum++) {
+
+      setCount(k,subsetSum,
+               ((getCount(k-1,subsetSum)) +
+                (getCount(k-1,subsetSum-S[k]))));
+    }
+  }
+
+//  // *** Fill m_oneMatrix ***
+//
+//  m_oneMatrix[getIndex(0,S[0])].set(0,true);
+//
+//  for (int k=1;k<m_n;k++) {  // for each element in S
+//
+//    // Iterate from min subset sum to target subset sum
+//    for (int subsetSum = minSubsetSum;subsetSum<=targetSubsetSum;subsetSum++) {
+//
+//      // If this element is equal to subsetSum
+//      if (S[k] == subsetSum) {
+//        m_oneMatrix[getIndex(k,subsetSum)].set(k,true);
+//        //print(m_oneMatrix[getIndex(k,subsetSum)],subsetSum);
+//      // If the same subset sum is achievable without this element
+//      } else if (getCount(k-1,subsetSum) == 1) {
+//        m_oneMatrix[getIndex(k,subsetSum)] = m_oneMatrix[getIndex(k-1,subsetSum)];
+//        //print(m_oneMatrix[getIndex(k,subsetSum)],subsetSum);
+//
+//      } else if (subsetSum > S[k] && getCount(k-1,subsetSum-S[k]) == 1) { // else if we need this element
+//        m_oneMatrix[getIndex(k,subsetSum)] = m_oneMatrix[getIndex(k-1,subsetSum-S[k])];
+//        m_oneMatrix[getIndex(k,subsetSum)].set(k,true);
+//
+//        //print(m_oneMatrix[getIndex(k,subsetSum)],subsetSum);
+//      }
+//
+//    }
+//  }
+}
+
+string DPMatrix::toString(const uint64_t S[]) const {
+return string("UNCOMMENT me");
+  //  std::ostringstream out;
+//  out << "S: " << join(S,m_n, " ") << endl << endl;
+//  out << "     | ";
+//  for (int subsetSum = m_minSubsetSum;subsetSum<=m_targetSubsetSum;subsetSum++) {
+//    out << std::setw(4) << subsetSum << " ";
+//  }out << endl;
+//  out << "-----+-";
+//  for (int subsetSum = m_minSubsetSum;subsetSum<=m_targetSubsetSum;subsetSum++) {
+//      out << "-----";
+//  }out << endl;
+//  for (int k=1;k<m_n;k++) {  // for each element in S
+//
+//    out << std::setw(4) << S[k] << " | ";
+//    // Iterate from min subset sum to target subset sum
+//    for (int subsetSum = m_minSubsetSum;subsetSum<=m_targetSubsetSum;subsetSum++) {
+//      out << std::setw(4) << getCount(k,subsetSum) << " ";
+//    }
+//    out << endl;
+//  }
+//  return out.str();
+}
+
+void DPMatrix::DPStats() {
+  int count0 = 0;
+  int count1 = 0;
+  int total = m_n * m_numSubsetSums;
+  for (int i=0;i<total;i++) {
+
+    switch (m_matrix[i]) {
+    case 0 : count0++; break;
+    case 1 : count1++; break;
+    default : break;
+    }
+  }
+
+  cout << "Count 0: " << std::setw(7) << count0 << "  (" << ((double) count0 * (double) 100 / (double) total) << "%)" << endl
+       << "Count 1: " << std::setw(7) << count1 << "  (" << ((double) count1 * (double) 100 / (double) total) << "%)" << endl
+       << "Total  : " << total << endl << endl;
+
+  for (int i=0;i<m_n;i++) {
+    cout << std::setw(2) << i << ": " << getCount(i,m_targetSubsetSum) << endl;
+  }
+
+}
+int DPMatrix::getNumSubsets() const {
+  return getCount(m_n-1,m_targetSubsetSum);
+}
+
+bool DPMatrix::searchBC(const int binIdx, const int &numBins, const int subsetSumLeft,
+                      bool isElementUsed[], int SIdx) {
+
+  bool isSuccessful = false;
+  while (SIdx > 0 && isElementUsed[SIdx]) {                   // Skip used elements
+    SIdx--;
+  }
+
+  { // DEBUG START
+    int count = 0;
+    for (int i=0;i<=SIdx;i++) {
+      if (!isElementUsed[i]) {
+        count++;
+      }
+    }
+//      cout << "Bin Idx: "   << std::setw(2) << binIdx
+//           << "  SIdx: "    << std::setw(2) << SIdx
+//           << "  Count: "   << std::setw(2) << count
+//           << "  SS Left: " << std::setw(6) << subsetSumLeft
+//           << "  Elem Val: "<< std::setw(6) << m_S[SIdx]
+//           << "  ";
+
+
+  }
+
+
+
+  if (subsetSumLeft == 0) {                                   // If we have a perfect partition
+    //cout << "[SS LEFT 0]" << endl;
+
+    if (binIdx == numBins - 1) {                              // If we packed the last bin
+      cout << "FOUND SOLUTION!" << endl;                      // We are done
+      isSuccessful = true;
+    } else {                                                  // else
+      isSuccessful =
+          searchBC(binIdx+1,numBins, m_targetSubsetSum,         // Pack next bin
+                 isElementUsed,m_n-1);
+    }
+  } else if (SIdx == 0) {                                     // If we got to the last element
+    //cout << "[SIdx == 0]" << endl;
+    if (subsetSumLeft == m_S[0] && !isElementUsed[0]) {       // and it makes a perfect partition
+      isElementUsed[0] = true;                                // Set the element to used
+      isSuccessful =
+          searchBC(binIdx+1,numBins,m_targetSubsetSum,          // Search next bin
+                 isElementUsed, SIdx);
+      isElementUsed[0] = false;
+    }
+  } else {                                                    // Not perfect and not at last element
+    //cout << "[Recurse]" << endl;
+    // *** First recurse including the current element ***
+    if (getCount(SIdx-1,subsetSumLeft-m_S[SIdx]) > 0) {       // If we can include this element
+      isElementUsed[SIdx] = true;                             // Set it as used
+      isSuccessful =
+          searchBC(binIdx,numBins, subsetSumLeft - m_S[SIdx],   // recurse
+                 isElementUsed, SIdx-1);
+      isElementUsed[SIdx] = false;                            // Can use it again going forward
+    }
+
+    // *** Now recurse not including the current element ***
+    if (!isSuccessful &&                                      // Didn't find solution yet
+        getCount(SIdx-1,subsetSumLeft) > 0) {                 // If we don't have to include this element
+
+      isSuccessful = searchBC(binIdx,numBins,subsetSumLeft,     // Recurse
+                         isElementUsed,SIdx-1);
+    }
+  }
+  return isSuccessful;
+}
+
+bool DPMatrix::searchBC(const int numBins) {
+  bool *isElementUsed = new bool[m_n];
+  for (int i=0;i<m_n;i++) {
+    isElementUsed[i] = false;
+  }
+
+  return searchBC(0,numBins,m_targetSubsetSum, isElementUsed, m_n-1);
+}
+
+int g_min;
+bool DPMatrix::searchIA(const int SIdx,const int numBins, int ssLeft[], Bitset bitsRequired, int targetCount) {
+
+  if (getCount(SIdx,m_targetSubsetSum) < targetCount) {
+    return false;
+  }
+  const int LOOKAHEAD_MAX=5;
+  if (SIdx > LOOKAHEAD_MAX) {
+    for (int lookahead=0;lookahead<LOOKAHEAD_MAX;lookahead++) {
+      int count0 = 0;
+      for (int i=0;i<numBins;i++) {
+        if ( getCount(SIdx-lookahead,ssLeft[i]) == 0) {
+          count0++;
+          if (count0 > lookahead) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+  // =========
+  // DEBUGGING
+  // =========
+  if (SIdx < g_min)
+  {
+    g_min = SIdx;
+    cout << "Min: " << g_min << endl;
+
+    cout << std::setw(2) << SIdx <<"  Element: " << m_S[SIdx] << endl
+         << "{";
+    for (int i=0;i<numBins;i++) {
+      cout << std::setw(7) << i << " ";
+    }cout << "}" << endl;
+
+    cout << "{";
+    for (int i=0;i<numBins;i++) {
+      cout << std::setw(7) << ssLeft[i] << " ";
+    }cout << "}" << endl;
+
+    cout << "{";
+    for (int i=0;i<numBins;i++) {
+      cout << std::setw(7) << getCount(SIdx,ssLeft[i]) << " ";
+    }cout << "}" << endl;
+
+    for (int i=0;i<numBins;i++) {
+      int count = getCount(SIdx,ssLeft[i]);
+
+      if (count == 1) {
+        Bitset &bitset = m_oneMatrix[getIndex(SIdx,ssLeft[i])];
+        cout << std::setw(2) << i <<": " << getBits(bitset,4,m_n) << endl;
+      }
+    }
+  }
+  // =============
+  // END DEBUGGING
+  // =============
+
+  if (SIdx == 0) {
+    cout << "SOLVED!" << endl;
+
+    for (int i=0;i<m_n;i++) {
+      cout << ssLeft[i] << " ";
+    }
+    return true;
+  } else {
+    // if more than one bin needs this element, our current packing is bad, return false
+
+    //cout << "m_S[SIdx]: " << m_S[SIdx] << endl;
+    for (int binIdx=0;binIdx<numBins;binIdx++) {
+
+
+
+      if (m_S[SIdx] <= ssLeft[binIdx]) {                  // if the element <= subset sum left
+
+        int newValue = ssLeft[binIdx] - m_S[SIdx];
+        int count = getCount(SIdx-1,newValue);
+        if (count == 1) {
+          if ((m_oneMatrix[getIndex(SIdx-1,newValue)] & bitsRequired).any()) {
+            // should check to see if the bin is full, then can continue
+            continue;
+          } else {
+            //cout << "BinIdx: " << binIdx << endl << endl;
+
+            int newTargetCount = (ssLeft[binIdx] == m_targetSubsetSum) ? targetCount - 1 : targetCount;
+            ssLeft[binIdx] -= m_S[SIdx];
+            if (searchIA(SIdx-1,numBins,ssLeft,
+                        (m_oneMatrix[getIndex(SIdx-1,newValue)] | bitsRequired),newTargetCount)) {
+              return true;
+            }
+            ssLeft[binIdx] += m_S[SIdx];
+          }
+        } else if (count > 0) { // If we can put S[SIdx] in bin[binIdx]
+          //cout << "BinIdx: " << binIdx << endl << endl;
+
+          int newTargetCount = (ssLeft[binIdx] == m_targetSubsetSum) ? targetCount - 1 : targetCount;
+          ssLeft[binIdx] -= m_S[SIdx];
+          if (searchIA(SIdx-1,numBins,ssLeft,bitsRequired,newTargetCount)) {
+            return true;
+          }
+          ssLeft[binIdx] += m_S[SIdx];
+        }
+        if (ssLeft[binIdx] == m_targetSubsetSum ) {
+          break;
+        }
+      }
+    }
+
+  }
+
+
+  return false;
+}
+
+bool DPMatrix::searchIA(const int numBins) {
+  int *ssLeft= new int[numBins];
+  for (int i=0;i<numBins;i++) {
+    ssLeft[i] = m_targetSubsetSum;
+  }
+  Bitset bitsRequired;
+  g_min = m_n-1;
+  return searchIA(m_n-1,numBins,ssLeft,bitsRequired,numBins);
+}
+
+void DPMatrix::generateSubsets(vector<Bitset> &bitsets,const Bitset &bitset,
+                               const int SIdx,const int subsetSumLeft) {
+
+  if (subsetSumLeft == 0) {                             // We have a subset with proper subset sum
+    addBitset(bitsets,bitset);
+  } else if (SIdx == 0) {                               // Last element
+    if (subsetSumLeft == m_S[0]) {                      // If the last element is the same as subsetSumLeft
+      addBitset(bitsets,bitset | (BITSET_ONE));   // Add it
+    }
+  } else {
+    // First recurse including the current element
+    uint64_t &value = m_S[SIdx];
+    if (getCount(SIdx-1,subsetSumLeft-value) > 0) {       // If we can include this element
+      generateSubsets(bitsets,                            // Pass VariantDir(vd,"./src",duplicate=0)the array of bitsets
+                      bitset | (BITSET_ONE << SIdx),      // The current bitset with the new element set
+                      SIdx-1,subsetSumLeft - value);
+    }
+
+    // Now recurse not including the current element
+    if (getCount(SIdx-1,subsetSumLeft) > 0) {             // If we don't have to include this element
+      generateSubsets(bitsets,bitset,SIdx-1,subsetSumLeft);
+    }
+  }
+}
+
+size_t DPMatrix::generateSubsets(vector<Bitset> &bitsets) {
+  Bitset bitset;
+
+  generateSubsets(bitsets,bitset,m_n-1,m_targetSubsetSum);
+
+  return (int) bitsets.size();
+}
+
+size_t DPMatrix::generateSubsets(vector<Bitset> &bitsets, uint64_t lowerBound, uint64_t upperBound) {
+  if (upperBound < lowerBound) {
+    cerr << "Upper bound (" << upperBound << ") is less than lower bound (" << lowerBound << ")" << endl;
+    return -1;
+  }
+  if (upperBound > m_targetSubsetSum) {
+    cerr << "Upper bound (" << upperBound << ") is greater than target subset sum (" << m_targetSubsetSum << ")" << endl;
+    return -2;
+  }
+
+
+
+  uint64_t originalTargetSubsetSum = m_targetSubsetSum; // save target subset sum
+  Bitset bitset;
+  for (uint64_t targetSubsetSum = upperBound; targetSubsetSum >= lowerBound;targetSubsetSum--) {
+    m_targetSubsetSum = targetSubsetSum;
+    generateSubsets(bitsets,bitset,m_n-1,targetSubsetSum);
+  }
+  m_targetSubsetSum = originalTargetSubsetSum;  // reset
+
+  return (int) bitsets.size();
+}
+
+} // end namespace

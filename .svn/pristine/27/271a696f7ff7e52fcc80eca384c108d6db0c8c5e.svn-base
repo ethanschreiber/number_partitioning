@@ -1,0 +1,200 @@
+/* This program implements the algorithm described in Mike Moffitt's
+   IJCAI paper. This version runs KK to get the initial solution. In
+   this version, SEARCH doesn't return the best solution cost, but
+   simple sets the global variable BESTSOFAR to the cost of the best
+   solution found so far. This version doesn't pass MAXSOFAR as an
+   argument to the search routine, but maintains a global array of its
+   value, indexed by k, the number of remaining subsets. */
+
+#include "MoffittRich.hpp"
+#include "../ss/CGA.hpp"
+
+#include <stdio.h>                                    /* standard I/O library */
+#include <math.h>                                     /* mathematical library */
+#include <iostream>
+#include <stdint.h>
+#define MAXK 11              // maximum number of sets being partitioned into
+
+static uint64_t bestSoFar;      // largest subset sum in best solution found so far
+static uint64_t maxsofar[MAXK]; //largest sum of subsets K-index in current solution
+
+using std::cout;
+
+
+/* SEARCH is the main recursive routine.  It is used both to iterate
+   through successive subsets and to perform the inclusion-exclusion
+   search for a given subset.  It takes as arguments the number of
+   sets K in which to divide the remaining numbers, the sum of the
+   numbers included so far in the current subset (SUBSUM), an array of
+   the numbers excluded from the current subset (EX), the number of
+   excluded numbers (NUMEX), the sum of the excluded numbers (SUMEX),
+   an array S of remaining integers to be included or excluded, sorted
+   in decreasing order, the length N of the array, the SUM of all the
+   numbers in the array, and a LOWER bound on the subset sum currently
+   being constructed.  The upper bound on any subset sum is the global
+   variable BESTSOFAR.  As a side effect, it sets BESTSOFAR to the
+   largest subset sum in the best complete solution found so far. */
+
+void
+search (int k,      // number of subsets in which to divide remaining numbers
+        uint64_t subSum, //sum of integers included so far in current subset
+        uint64_t ex[MAXN],    // array of integers excluded from this subset
+        int numEx,                              // number of excluded numbers
+        uint64_t sumEx,                           // sum of excluded numbers
+        uint64_t S[MAXN],        // integers not assigned to any subsets yet
+        int n,                                   // length of integer array S
+        uint64_t sum,                                // sum of integers in S
+        uint64_t lower)       // the minimum sum required for current subset
+
+{
+  uint64_t newLower;                  // new lower bound for next subset sum
+  uint64_t newEx[MAXN];                    // new array for excluded numbers
+
+  if (n == k && numEx == 0 && k > 2) {  // TODO: Is this case necessary?
+
+    /***********************************/
+    /* greedy is optimal at this point */
+    /***********************************/
+
+    uint64_t last = S[n-2] + S[n-1];                  // smallest two numbers go in last subset (Why? Shouldn't there be one per set?)
+    uint64_t newSum = std::max(last,subSum);
+
+    if (newSum <= maxsofar[k]) {
+      bestSoFar = maxsofar[k];               // previous subset sums larger
+    } else if (newSum < bestSoFar) {
+      bestSoFar = newSum;                    // new sol better than best so far
+    }
+
+  } else if (n == 1) {
+    /*********************************************************************************/
+    /* only one number left to be considered, this is the branch and bound recursion */
+    /*********************************************************************************/
+
+
+    if (k == 2) {
+      // -----------------------------
+      // completing penultimate subset
+      // -----------------------------
+      uint64_t newSum = (subSum <= sumEx) ?                      // If current < complement
+                          std::max(subSum + S[0], sumEx       ): // then add last number to current set
+                          std::max(subSum       , sumEx + S[0]); // else add last number to complement set
+
+      if (newSum <= maxsofar[k]) {
+        bestSoFar = maxsofar[k];               // previous subset sums larger
+      } else if (newSum < bestSoFar) {
+        bestSoFar = newSum;                    // new sol better than best so far
+      }
+
+    } else {
+      // -----------------------------------------------------
+      // one number left to assign, but not penultimate subset
+      // -----------------------------------------------------
+
+      uint64_t newSum = subSum + S[0];
+
+      if (newSum < bestSoFar) {                             // 1. INCLUDE the last number if it fits.
+
+          if (newSum + ex[numEx-1] > maxsofar[k]) {         // not dominated
+
+            maxsofar[k-1] = std::max(newSum,maxsofar[k]);
+
+            newLower = sumEx - (k - 2) * (bestSoFar - 1);   //lb on next subset
+
+            if (newLower < bestSoFar) {                     //lower bound must be better than best solution so far
+
+              search(k-1,ex[0],newEx,0,0ll,&ex[1],
+                     numEx-1,sumEx-ex[0],newLower);
+            }
+            if (bestSoFar <= maxsofar[k]) {                 // no need to continue searching
+              return;
+            }
+          }
+
+      }
+
+      if (newSum >= bestSoFar && subSum >= lower) {         // 2. EXCLUDE the last number if inclusion doesn't dominate.
+
+        ex[numEx] = S[0];                                   // move last number to excluded list
+        if (subSum > maxsofar[k]) {
+          maxsofar[k-1] = subSum;                           //new maximum sum of completed subsets
+        } else {
+          maxsofar[k-1] = maxsofar[k];
+        }
+        newLower = sumEx + S[0] - (k - 2) * (bestSoFar - 1); //lb on next subset
+
+        if (newLower < bestSoFar) {
+
+          search (k-1,ex[0],newEx,0,0ll,&ex[1],
+                  numEx,sumEx+S[0]-ex[0],newLower);
+        }
+      }
+    }
+
+  } else {
+
+    /**********************************************************************************/
+    /* more than one number left to assign, this is the inclusion/exclusion recursion */
+    /**********************************************************************************/
+
+    // -------------
+    // First include
+    // -------------
+
+
+    if (subSum + S[0] < bestSoFar) {                            // including next number doesn't exceed upper bound
+
+      search(k,subSum+S[0],ex,numEx,sumEx,&S[1],n-1,sum-S[0],lower);
+
+      if (bestSoFar <= maxsofar[k]) {
+        return;                                                 // solution <= max of previous subsets
+      }
+
+      if (subSum + S[0] < bestSoFar && subSum + S[0] >= lower) { // Moffitts pruning rule
+          lower = subSum + S[0] + 1;
+      }
+    }
+
+    // -----------
+    // Now exclude
+    // -----------
+
+    if (subSum + sum - S[0] >= lower) { // if next number is excluded, can still make lb
+
+
+      ex[numEx] = S[0];                     // add next number to excluded array
+      search(k,subSum,ex,numEx+1,sumEx+S[0],&S[1],n-1,sum-S[0],lower);
+    }
+  }
+}
+
+
+uint64_t executeMoffittRich(const PartitioningProblem &problem, BinPackingStats &stats) {
+
+
+
+  int K = problem.K;                     // total number of sets to partition numbers into
+  int N = problem.N;                    // problem size: number of values in number array
+
+  uint64_t *S = (uint64_t*) problem.S;           // array of integers for each problem instance
+  uint64_t sumall = problem.sum;         // sum of all the numbers in the problem instance
+  uint64_t ex[MAXN];                           // array for excluded numbers
+
+  // ----------------
+  // Find upper bound
+  // ----------------
+  //  bestSoFar = kk (S, N, K, sumall);             // compute KK approximation
+  const int NUM_NODES = 1000000;
+  const int MAX_DISCREPENCIES = 5;
+  bestSoFar = executeCGA(problem, NUM_NODES,MAX_DISCREPENCIES);
+
+  //cout << "Upper Bound: " << bestSoFar << endl;
+  uint64_t lower = sumall - (K - 1) * (bestSoFar - 1); // lower bound on first subset
+
+  maxsofar[K] = 0ll;                     // initially, no completed subsets
+
+  if (lower < bestSoFar)                        // look for better solution
+    search(K, S[0], ex, 0, 0ll, &S[1], N-1, sumall-S[0], lower);
+
+  return bestSoFar;
+
+}

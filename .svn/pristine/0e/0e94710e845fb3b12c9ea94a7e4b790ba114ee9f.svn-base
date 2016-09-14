@@ -1,0 +1,108 @@
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.080/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.080/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.080/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.080/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.080/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.080/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.080/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.080/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.080/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.120/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.120/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.120/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.120/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.120/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.120/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.120/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.120/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.120/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.160/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.160/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.160/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.160/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.160/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.160/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.160/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.160/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.160/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.200/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.200/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.200/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.200/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.200/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.200/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.200/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.200/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.200/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.240/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.240/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.240/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.240/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.240/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.240/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.240/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.240/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.240/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.280/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.280/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.280/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.280/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.280/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.280/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.280/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.280/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.280/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.320/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.320/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.320/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.320/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.320/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.320/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.320/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.320/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.320/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.360/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.360/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.360/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.360/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.360/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.360/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.360/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.360/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.360/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.400/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.400/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.400/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.400/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.400/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.400/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.400/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.400/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.400/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.600/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.600/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.600/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.600/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.600/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.600/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.600/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.600/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.600/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.800/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.800/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/.800/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.800/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.800/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/.800/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.800/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.800/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/.800/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/1.000/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/1.000/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_4/1.000/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/1.000/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/1.000/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_6/1.000/ -m 2
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/1.000/ -m 0
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/1.000/ -m 0 -c -b 1000000
+timeout 86400 ./bin/BinPacking -f ./dat/packing/50/10_15/1.000/ -m 2

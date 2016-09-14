@@ -1,0 +1,51 @@
+/*
+ * MoffittCachedIE.hpp
+ *
+ *  Created on: Sep 25, 2013
+ *      Author: ethan
+ */
+
+#ifndef MOFFITTCACHEDIE_HPP_
+#define MOFFITTCACHEDIE_HPP_
+
+#include "../ss/SubsetSum.hpp"
+#include "../ss/Schroeppel_Shamir.hpp"
+#include <stdint.h>
+#include <limits>
+#include <iostream>
+
+struct CachedIENode {
+
+  uint64_t lower;
+	uint64_t upper;
+
+	CachedIENode *included;
+	CachedIENode *excluded;
+
+	uint8_t ieIdx;  // The index of the element to include/exclude
+
+	CachedIENode() :
+		lower( std::numeric_limits<uint64_t>::max()),
+		upper( 0 ), included(NULL), excluded(NULL) {
+
+	}
+};
+
+class CachedIETree {
+private :
+  CachedIENode *m_root;
+public :
+  CachedIETree(vector<ss::SSSetNode> &v);
+~CachedIETree();
+  void push_back(ss::SSSetNode &node);
+};
+
+class MoffittCachedIE {
+private:
+
+
+public:
+	MoffittCachedIE(const vector<uint64_t> &S, uint64_t min, uint64_t max);
+};
+
+#endif /* MOFFITTCACHEDIE_HPP_ */

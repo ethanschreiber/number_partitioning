@@ -1,0 +1,45 @@
+/*
+ * MoffittCachedIE.cpp
+ *
+ *  Created on: Sep 25, 2013
+ *      Author: ethan
+ */
+
+#include "MoffittCachedIE.hpp"
+
+MoffittCachedIE::MoffittCachedIE(const vector<uint64_t> &S, uint64_t min, uint64_t max) {
+  vector<ss::SSSetNode> sets;
+  ss::generateSetsSS(&S[0], S.size(), min, max, sets);
+
+  cout << "Min   : " << min << endl
+       << "Max   : " << max << endl
+       << "Diff  : " << max-min << endl;
+  cout << "# Sets: " << sets.size() << endl;
+
+}
+
+CachedIETree::CachedIETree(vector<ss::SSSetNode> &v) {
+
+//  m_root = new CachedIENode();
+//  m_root->nextIdx = v[0].
+//
+//  for (size_t i=1;i<v.size();i++) {
+//    push_back(v[i]);
+//  }
+}
+
+CachedIETree::~CachedIETree() {
+  delete m_root;
+}
+
+void CachedIETree::push_back(ss::SSSetNode &node) {
+//  size_t idx = node.m_set.find_first();
+//
+//  CachedIENode *ptr = m_root;
+//
+//
+//  if (idx > ptr->ieIdx) {   // Follow the
+//
+//  } else if (idx > )
+
+}

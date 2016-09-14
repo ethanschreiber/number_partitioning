@@ -1,0 +1,203 @@
+/*
+ * SubsetSum.hpp
+ *
+ *  Created on: Aug 29, 2012
+ *      Author: ethan
+ */
+
+#ifndef SUBSETSUM_HPP_
+#define SUBSETSUM_HPP_
+
+#include "DPMatrix.hpp"
+#include "../PackingUtils.hpp"
+#include <vector>
+#include <deque>
+#include <boost/dynamic_bitset.hpp>
+using std::vector;
+using std::deque;
+
+namespace ss {
+
+
+string getBits(const Bitset &bitset,int groupSize,int numBits);
+typedef boost::dynamic_bitset<uint64_t> DynamicBitset;
+
+struct SSSetNode {
+private :
+  uint64_t m_sum;
+  DynamicBitset m_set;
+  uint8_t m_lastSetIdx;
+
+public :
+  static const DynamicBitset::size_type npos = DynamicBitset::npos;
+  SSSetNode(uint64_t sum0,const DynamicBitset &set0) : m_sum(sum0), m_set(set0) {}
+  SSSetNode(size_t size) : m_sum(0), m_set(size) {}
+  SSSetNode(size_t size, bool val, uint64_t sum) : m_sum(sum), m_set(size){
+    if (val) {
+      for (size_t i=0;i<size;i++) {
+        m_set[i] = val;
+      }
+    }
+  }
+
+  void set(size_t index, uint64_t value) {
+    m_set[index] = true;
+    m_sum += value;
+    m_lastSetIdx = index;
+  }
+
+  void unset(size_t index, uint64_t value) {
+    m_set[index] = false;
+    m_sum -= value;
+  }
+
+
+  uint64_t sum() const {
+    return m_sum;
+  }
+
+  uint64_t reverseSum(uint64_t maxValue) const {
+    return maxValue - m_sum;
+  }
+
+  const DynamicBitset& set() const {
+    return m_set;
+  }
+
+  string toString(const uint64_t *S) const {
+    std::ostringstream out;
+    out << "[card = " << m_set.count() << " members = {";
+    size_t idx = m_set.find_first();
+    bool isFirst = true;
+    while (idx != npos){
+      if (isFirst) {
+        isFirst = false;
+      } else {
+        out << ",";
+      }
+
+      out << S[idx];
+      idx = m_set.find_next(idx);
+    }
+    out << "} sum = " << m_sum << "]";
+    return out.str();
+  }
+
+
+  DynamicBitset::size_type max()  const {
+//    DynamicBitset::size_type idx = m_set.find_first();
+//    DynamicBitset::size_type lastIdx;
+//
+//    do {
+//      lastIdx = idx;
+//      idx = m_set.find_next(idx);
+//    } while (idx != npos);
+//    if (lastIdx != m_lastSetIdx) {
+//    	std::cerr << endl << lastIdx << " != " << m_lastSetIdx << endl;
+//    	exit(0);
+//    }
+//    return lastIdx;
+  	return m_lastSetIdx;
+  }
+
+  friend inline bool operator< (const SSSetNode &node1, const SSSetNode &node2);
+  friend inline bool operator> (const SSSetNode &node1, const SSSetNode &node2);
+
+};
+
+
+inline bool operator< (const SSSetNode &node1, const SSSetNode &node2) {
+    return node1.m_sum < node2.m_sum;
+}
+
+inline bool operator> (const SSSetNode &node1, const SSSetNode &node2) {
+    return node1.m_sum > node2.m_sum;
+}
+// -------
+// General
+// -------
+void generateAllSums (const uint64_t nums[MAXN],             // array of original numbers
+              vector<uint64_t> &sums,                // array of sums
+              int next,                             // pointer to next element of NUMS array
+              uint64_t sumsofar,                     // sum so far of elements in current subset
+              int last);
+
+void generateAllSets(const uint64_t S[MAXN],
+             vector<SSSetNode> &sets,
+             int first, int last,
+             bool sortAscending = true);
+
+// ------------------
+// Horowitz and Sahni
+// ------------------
+
+size_t generateSetsHS(const uint64_t S[MAXN], const int n,
+                      const uint64_t lower, const uint64_t upper,
+                      vector<SSSetNode> &allSets);
+
+size_t generateSetsHS(const uint64_t S[MAXN], const int n,
+                      const uint64_t lower, const uint64_t upper,
+                      vector<SetNode> &allSets);
+
+// ---------------------
+// Schroeppel and Shamir
+// ---------------------
+
+size_t generateSumsSS(const uint64_t S[MAXN], int n,uint64_t lower, uint64_t upper,
+                     vector<uint64_t> &allsums);
+
+// --------------------------
+// Schroeppel and Shamir Half
+// --------------------------
+size_t generateSumsSSHalf(const uint64_t S[MAXN], const int n, const uint64_t lower, const uint64_t upper,
+             vector<uint64_t> &allsums);
+
+
+size_t generateSetsSSHalf(const uint64_t S[MAXN], const int n,
+                          const uint64_t lower, const uint64_t upper,
+                          vector<SSSetNode> &allSets);
+
+// -----------------
+// Ordered Power Set
+// -----------------
+
+size_t generateSetsOPS(const uint64_t S[MAXN], const int n,
+                       const uint64_t lower, const uint64_t upper,
+                       deque<SSSetNode> &allSets);
+
+size_t generateSetsOPS(const uint64_t S[MAXN], const int n,
+                       const uint64_t lower, const uint64_t upper,
+                       deque<SetNode> &allSets);
+
+
+size_t generateSetsOPSReverse(const uint64_t S[MAXN], const int N,
+                              const uint64_t lower, const uint64_t upper,
+                              deque<SSSetNode> &LParam);
+
+
+// -------------------
+// Dynamic Programming
+// -------------------
+size_t generateSumsDP (const uint64_t S[MAXN], int n, uint64_t sum, uint64_t lower, uint64_t upper,
+                     vector<uint64_t> &allsums);
+
+size_t generateSetsDP(const uint64_t S[MAXN], const int n, const uint64_t sum, const uint64_t lower, const uint64_t upper,
+                    vector<Bitset> &allSets);
+
+// -------------------
+// Inclusion/Exclusion
+// -------------------
+
+size_t generateSetsIE(const uint64_t S[MAXN], const int n, const uint64_t sumRemaining,
+                      const uint64_t lower, const uint64_t upper,
+                      vector<SSSetNode> &allSets);
+
+size_t generateSetsIESimpleDominance(const uint64_t S[MAXN], const int n, const uint64_t sumRemaining,
+                      const uint64_t lower, const uint64_t upper,
+                      vector<SSSetNode> &allSets);
+size_t generateSetsIEMoffittDominance(const uint64_t S[MAXN], const int n, const uint64_t sumRemaining,
+                      const uint64_t lower, const uint64_t upper,
+                      vector<SSSetNode> &allSets);
+
+} // end namespace
+#endif /* SSALLSETS_HPP_ */

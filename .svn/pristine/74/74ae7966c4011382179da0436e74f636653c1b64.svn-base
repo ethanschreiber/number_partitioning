@@ -1,0 +1,116 @@
+/*
+ * MoffittCachedIE.cpp
+ *
+ *  Created on: Sep 25, 2013
+ *      Author: ethan
+ */
+
+#include "MoffittCachedIE.hpp"
+#include <iomanip>
+
+MoffittCachedIE::MoffittCachedIE(const vector<uint64_t> &S, uint64_t min, uint64_t max) {
+
+  SimpleTimer t1;
+
+  vector<ss::SSSetNode> sets;
+  ss::generateSetsSS(&S[0], S.size(), min, max, sets);
+  cout << "T1: " << t1.timeElapsed() << endl;
+  SimpleTimer t2;
+
+  m_tree.insert(sets);
+  cout << "T2: " << t2.timeElapsed() << endl;
+//  // **** START COUNTS ****
+//  cout << "Min   : " << min << endl
+//       << "Max   : " << max << endl
+//       << "Diff  : " << max-min << endl;
+//  cout << "# Sets: " << sets.size() << endl;
+//
+//  uint64_t *counts = new uint64_t[S.size()];
+//
+//  memset(counts,0,S.size() * sizeof(uint64_t));
+//
+//  for (size_t i=0;i<sets.size();i++) {
+//
+//    ss::DynamicBitset m_set = sets[i].set();
+//    size_t idx = m_set.find_first();
+//
+//    while (idx != ss::DynamicBitset::npos){
+//      counts[idx]++;
+//      idx = m_set.find_next(idx);
+//    }
+//  }
+//
+//  cout << endl << "COUNTS\n------\n\n";
+//
+//  for (size_t i=0;i<S.size();i++) {
+//    if (counts[i] != 0) {
+//      cout << std::setw(2) << i << ": " << counts[i] << endl;
+//    }
+//  }
+//  cout << "-------------------------" << endl;
+//  delete [] counts;
+//  // **** END COUNTS ****
+
+}
+
+
+CachedIETree::CachedIETree() : m_root(NULL){
+
+}
+
+CachedIETree::~CachedIETree() {
+  delete m_root;
+}
+
+void CachedIETree::insert(vector<ss::SSSetNode>& v) {
+  // Insert first set
+  const ss::DynamicBitset &set = v[0].set(); // Reference to bit set
+  size_t idx = set.find_first();             // first index in first set
+  CachedIENode ** ptr = &m_root;             // pointer to root pointer
+
+  while (idx != ss::DynamicBitset::npos){    // While there are elements left
+     *ptr = new CachedIENode(idx);           // Insert node for element
+     ptr = &((*ptr)->included);              // Point to inclusion
+     idx = set.find_next(idx);               // Find next index
+  }
+  // Insert remaining sets
+  for (size_t i=1;i<v.size();i++) {
+    push_back(v[i]);
+  }
+}
+
+void CachedIETree::push_back(const ss::SSSetNode &node) {
+  const ss::DynamicBitset &set = node.set();    // Reference to bit set
+  size_t idx = set.find_first();
+  CachedIENode ** ptr = &m_root;                // pointer to root pointer
+
+  while (idx != ss::DynamicBitset::npos){       // While there are elements left
+
+    if (*ptr == NULL) {                         // If there is no node
+      *ptr = new CachedIENode(idx);             // Insert node for element
+      ptr = &((*ptr)->included);                // Point to inclusion
+      idx = set.find_next(idx);                 // Find next index
+    } else if (idx < (*ptr)->ieIdx) {           // If less than idx
+      *ptr = new CachedIENode(idx, NULL, *ptr); // Insert new node with exclusion pointing to old one
+      ptr = &((*ptr)->included);
+      idx = set.find_next(idx);                 // Find next index
+    } else if (idx == (*ptr)->ieIdx) {          // If there is a match
+      ptr = &((*ptr)->included);                // Point to incluion
+      idx = set.find_next(idx);                 // Find next index
+    } else {                                    // if idx > ptr->ieIdx, we exclude
+      ptr = &((*ptr)->excluded);                // Point to exclusion
+    }
+  }
+}
+
+void CachedIETree::searchAll() {
+  searchAll(m_root);
+  cout << "m_root: " << m_root << endl;
+}
+
+void CachedIETree::searchAll(CachedIENode* node) {
+  if (node!= NULL) {
+    searchAll(node->included);
+    searchAll(node->excluded);
+  }
+}

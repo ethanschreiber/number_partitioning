@@ -1,0 +1,109 @@
+/*
+ * MoffittIE.cpp
+ *
+ *  Created on: Sep 19, 2013
+ *      Author: ethan
+ */
+
+#include "MoffittIE.hpp"
+
+#include <iomanip>
+namespace moffitt {
+
+// TODO: Don't need included, should probably remove it
+uint64_t inclusionExclusion(const int K, const size_t SIdx,
+                            const uint64_t CMin, uint64_t CBest, uint64_t maxSoFar,
+                            const vector<uint64_t> &S , const uint64_t SSum,
+                            vector<uint64_t> &included, const uint64_t includedSum,
+                            vector<uint64_t> &excluded, const uint64_t excludedSum) {
+
+  if (includedSum == 1057202983138687) {
+
+    cout << "SHIT!" << endl;
+    exit(0);
+  }
+  // ---------------------------------------------
+  // All elements included or excluded (Base Case)
+  // ---------------------------------------------
+  if (SIdx == S.size()) {
+    if (includedSum >= CMin && includedSum < CBest) {
+
+      cout << spaces(K) << "I/E    K: " << K << " CMin        : " << CMin << endl
+           << spaces(K) << "I/E    K: " << K << " CBest       : " << CBest << endl
+           << spaces(K) << "I/E    K: " << K << " Max So Far  : " << maxSoFar << endl
+           << spaces(K) << "I/E    K: " << K << " Included Sum: " << includedSum << endl << endl;
+
+      CBest = search(K-1,                                     // Go to the next bin
+                     excluded, excludedSum,
+                     CBest, std::max(maxSoFar,includedSum));  // If setSum > maxSoFar, update maxSoFar
+
+//      cout << "I/E AftK: " << K << " CMin        : " << CMin << endl
+//           << "I/E AftK: " << K << " CBest       : " << CBest << endl;
+    }
+  } else {
+
+    //
+    const uint64_t includeRestSum       = includedSum + SSum; // Sum with all remaining
+    if (includeRestSum >= CMin) {
+
+      // --------------------------------------------
+      // If the rest fit in this bin, put them all in
+      // --------------------------------------------
+      if (includeRestSum  < maxSoFar) {
+        uint64_t newValue = std::max(includeRestSum,
+                                     inclusionExclusion( K, S.size(), CMin, CBest, maxSoFar, S, 0,
+                                                         included, includeRestSum, excluded, excludedSum));
+        CBest = std::min(CBest,newValue);
+
+      } else {
+
+        //----------
+        // Inclusion
+        //----------
+        const uint64_t newIncludedSum  = includedSum  + S[SIdx]; // Inclusion sum
+        const uint64_t newSSum         = SSum - S[SIdx];         // Inclusion sum remaining
+
+        if (newIncludedSum < CBest) {
+          included.push_back(S[SIdx]);
+          uint64_t newValue = std::max(newIncludedSum,
+                                       inclusionExclusion(K, SIdx+1, CMin, CBest, maxSoFar, S, newSSum,
+                                                          included, newIncludedSum, excluded, excludedSum));
+          CBest = std::min(CBest,newValue);
+          included.pop_back();
+        }
+
+        //----------
+        // Exclusion
+        //----------
+
+        if (maxSoFar    < CBest &&
+            includedSum < CBest) {
+          uint64_t newCMin;               // For Moffit's pruning rule
+          if (newIncludedSum < CBest && newIncludedSum >= CMin) {
+            newCMin = newIncludedSum + 1;
+          } else {
+            newCMin = CMin;
+          }
+
+          if (K == 2 && newIncludedSum == 1057337062695267) {
+            cout << spaces(K) << "New CMIn: " << newCMin << endl;
+          }
+
+
+          excluded.push_back(S[SIdx]);
+          uint64_t newValue = std::max(includedSum,
+                                       inclusionExclusion(K, SIdx+1, newCMin, CBest, maxSoFar, S, newSSum,
+                                                          included, includedSum, excluded, excludedSum + S[SIdx]));
+          if (K == 2 && newIncludedSum == 1057337062695267) {
+             cout << spaces(K) << "New CMIn DONE!" << endl;
+           }
+          CBest = std::min(CBest,newValue);
+          excluded.pop_back();
+        }
+      }
+    }
+  }
+  return CBest;
+}
+
+} // End Namespace

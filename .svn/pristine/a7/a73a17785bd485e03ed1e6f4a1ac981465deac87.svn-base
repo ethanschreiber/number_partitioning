@@ -1,0 +1,15 @@
+/*
+ * Moffitt.hpp
+ *
+ *  Created on: Aug 20, 2013
+ *      Author: ethan
+ */
+
+#ifndef MOFFITT_RICH_HPP_
+#define MOFFITT_RICH_HPP_
+
+#include "../PackingUtils.hpp"
+
+
+uint64_t executeMoffittRich(const PartitioningProblem &problem, BinPackingStats &stats);
+#endif /* MOFFITT_HPP_ */

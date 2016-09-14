@@ -1,0 +1,263 @@
+/*
+ * MoffittCached.cpp
+ *
+ *  Created on: Jul 31, 2013
+ *      Author: ethan
+ */
+
+
+#include "MoffittCached.hpp"
+#include "MoffittSS.hpp"
+#include "../ss/CGA.hpp"
+
+
+#include <iomanip>
+#include <algorithm> // for copy
+#include <iterator> // for ostream_iterator
+#include <sstream>
+
+namespace moffitt {
+
+// ========
+// CachedIE
+// ========
+MoffittCachedIE::MoffittCachedIE(MoffittCached *moffittCached, const vector<uint64_t> &S,
+                                 uint64_t min, uint64_t max) :
+    m_root(NULL), m_moffittCached(moffittCached), m_S(S.begin(),S.end()){
+
+  vector<ss::SSSetNode> sets;
+  ss::generateSetsSS(&S[0], S.size(), min, max, sets);
+  insert(sets);
+
+
+//  searchAll();
+}
+
+MoffittCachedIE::~MoffittCachedIE() {
+  delete m_root;
+}
+
+void MoffittCachedIE::clear(CachedIENode *node) {
+  if (node->included != NULL) {
+    clear(node->included);
+  }
+
+  if (node->excluded != NULL) {
+    clear(node->excluded);
+  }
+
+  delete node;
+
+}
+void MoffittCachedIE::clear() {
+  if (m_root != NULL) {
+    clear(m_root);
+    m_root = NULL;
+  }
+}
+void MoffittCachedIE::insert(vector<ss::SSSetNode>& v) {
+
+  // Insert first set
+  const ss::DynamicBitset &set = v[0].set(); // Reference to bit set
+  size_t idx = set.find_first();             // first index in first set
+  CachedIENode ** ptr = &m_root;             // pointer to root pointer
+
+  while (idx != ss::DynamicBitset::npos){    // While there are elements left
+     *ptr = new CachedIENode(idx);           // Insert node for element
+     ptr = &((*ptr)->included);              // Point to inclusion
+     idx = set.find_next(idx);               // Find next index
+  }
+
+  // Insert remaining sets
+  for (size_t i=1;i<v.size();i++) {
+    push_back(v[i]);
+  }
+}
+
+void MoffittCachedIE::push_back(const ss::SSSetNode &node) {
+  const ss::DynamicBitset &set = node.set();    // Reference to bit set
+  size_t idx = set.find_first();
+  CachedIENode ** ptr = &m_root;                // pointer to root pointer
+
+  while (idx != ss::DynamicBitset::npos){       // While there are elements left
+
+    if (*ptr == NULL) {                         // If there is no node
+      *ptr = new CachedIENode(idx);             // Insert node for element
+      ptr = &((*ptr)->included);                // Point to inclusion
+      idx = set.find_next(idx);                 // Find next index
+    } else if (idx < (*ptr)->ieIdx) {           // If less than idx
+      *ptr = new CachedIENode(idx, NULL, *ptr); // Insert new node with exclusion pointing to old one
+      ptr = &((*ptr)->included);
+      idx = set.find_next(idx);                 // Find next index
+    } else if (idx == (*ptr)->ieIdx) {          // If there is a match
+      ptr = &((*ptr)->included);                // Point to incluion
+      idx = set.find_next(idx);                 // Find next index
+    } else {                                    // if idx > ptr->ieIdx, we exclude
+      ptr = &((*ptr)->excluded);                // Point to exclusion
+    }
+  }
+}
+
+
+uint64_t MoffittCachedIE::inclusionExclusion(CachedIENode *node, const int K, ss::Bitset &elements,
+                                             const uint64_t elementsSum, const uint64_t includedSum,
+                                             uint64_t CMin, uint64_t CBest, uint64_t maxSoFar) {
+
+  // ---------------------------------------------
+  // All elements included or excluded (Base Case)
+  // ---------------------------------------------
+  if (node == NULL) {
+
+    if (includedSum >= CMin && includedSum < CBest) {
+        cout << spaces(K) << "I/E    K: " << K << " Bits        : " << getBits(elements,10,elements.size()) << endl
+             << spaces(K) << "I/E    K: " << K << " CMin        : " << CMin << endl
+             << spaces(K) << "I/E    K: " << K << " CBest       : " << CBest << endl
+             << spaces(K) << "I/E    K: " << K << " Max So Far  : " << maxSoFar << endl
+             << spaces(K) << "I/E    K: " << K << " Included Sum: " << includedSum << endl << endl;
+        CBest = m_moffittCached->search(K-1,elements,elementsSum,CBest,std::max(maxSoFar,includedSum));
+//        cout << "I/E AftK: " << K << " CMin        : " << CMin << endl
+//             << "I/E AftK: " << K << " CBest       : " << CBest << endl;
+      }
+
+  } else {
+
+    uint8_t &idx = node->ieIdx;         // Reference to element
+
+    // ---------
+    // Inclusion
+    // ---------
+    const uint64_t newIncludedSum = includedSum  + m_S[idx]; // Inclusion sum
+
+    bool elementExists = elements[idx];
+
+//        if (K == 2 && newIncludedSum == 1057337062695267) {
+//          cout << "Eth CMIn: " << CMin << endl;
+//        }
+
+    if (elementExists) {                // If we have the element left
+
+      elements.set(idx,false);          // Element no longer available
+      uint64_t newValue =
+          std::max(newIncludedSum,
+                   inclusionExclusion(node->included, K, elements, elementsSum - m_S[idx],
+                                      newIncludedSum, CMin, CBest, maxSoFar));
+
+      CBest = std::min(CBest,newValue);
+      elements.set(idx,true);                     // Element available again
+    }
+    // ---------
+    // Exclusion
+    // ---------
+
+    if (maxSoFar    < CBest &&
+        includedSum < CBest &&
+        node->excluded != NULL) {
+
+      uint64_t newCMin;               // For Moffit's pruning rule
+      if (elementExists &&
+          newIncludedSum < CBest &&
+          newIncludedSum >= CMin) {
+        newCMin = newIncludedSum + 1;
+      } else {
+        newCMin = CMin;
+      }
+
+      if (K == 2 && newIncludedSum == 1057337062695267) {
+        cout << spaces(K) << "New CMIn: " << newCMin << endl;
+      }
+
+
+      uint64_t newValue = std::max(includedSum,
+                                   inclusionExclusion(node->excluded, K, elements, elementsSum,
+                                                      includedSum, newCMin, CBest, maxSoFar));
+      if (K == 2 && newIncludedSum == 1057337062695267) {
+         cout << spaces(K) << "New CMIn DONE!" << endl;
+       }
+      CBest = std::min(CBest,newValue);
+    }
+  }
+
+
+  return CBest;
+}
+
+uint64_t MoffittCachedIE::inclusionExclusion(const int K, ss::Bitset elements, const uint64_t remainingSum,
+                                 uint64_t CMin, uint64_t CBest, uint64_t maxSoFar) {
+  return inclusionExclusion(m_root, K, elements, remainingSum, 0, CMin, CBest, maxSoFar);
+
+}
+
+// =============
+// MoffittCached
+// =============
+MoffittCached::MoffittCached(const vector<uint64_t>& S, uint64_t min, uint64_t max, int K)
+: m_cachedIE(this,S,min,max) {
+
+}
+
+uint64_t MoffittCached::search(const int K, ss::Bitset &elements,
+                               const uint64_t elementsSum,
+                               const uint64_t CBest, uint64_t maxSoFar) {
+
+
+  cout << spaces(K) << "------- Begin K=" << K << " Search -------" << endl;
+  cout << spaces(K) << "Search K: " << K << " CBest       : " << CBest << endl;
+
+  uint64_t currentValue;
+
+  if (K==1) {                          // If we have reached the last bin
+    currentValue = elementsSum;        // All elements must go in it
+    cout << spaces(K) << "------ END K==1 SEARCH -------" << endl;
+  } else if (!elements.any()) {        // If there are no elements left
+    currentValue = 0;                  // Then all remaining bins are empty
+    cout << spaces(K) << "------ END Empty SEARCH -------" << endl;
+  } else {
+
+    uint64_t CMin = elementsSum - (K-1) * (CBest-1);
+    cout << spaces(K) << "Search K: " << K << " CMin        : " << CMin << endl;
+
+    if (CMin < CBest) {
+
+      currentValue =m_cachedIE.inclusionExclusion(K,elements,elementsSum,CMin,CBest,maxSoFar);
+    } else {
+      currentValue = CBest;
+    }
+    cout << spaces(K) << "------ END K=" << K << " RECURSIVE SEARCH -------" << endl;
+  }
+
+
+  return currentValue;
+}
+
+// ================
+// Execute Function
+// ================
+uint64_t executeMoffittCached(const PartitioningProblem &problem, BinPackingStats &stats) {
+
+  // Original maxSoFar is the minimum possible sum of a bin
+  // We can assume all subsequent bins will be least this large
+  uint64_t maxSoFar = divCeiling(problem.sum, (uint64_t) problem.K);  // Best we can do is divide evenly
+
+  // Find upper bound
+  const int NUM_NODES = 1000000;
+  const int MAX_DISCREPENCIES = 5;
+  uint64_t CBest = executeCGA(problem, NUM_NODES,MAX_DISCREPENCIES);
+
+  uint64_t CMin = problem.sum - (problem.K-1) * (CBest-1);
+
+//  cout << "Initial CMin : " << CMin << endl
+//       << "Initial CBest: " << CBest << endl;
+  MoffittCached mc(vector<uint64_t>(problem.S,problem.S+problem.N),CMin, CBest-1, problem.K);
+  ss::Bitset elements;
+
+  for (int i=0;i<problem.N;i++) {
+    elements[i] = true;
+  }
+  uint64_t answer = mc.search(problem.K,elements, problem.sum, CBest,maxSoFar);
+
+  return answer;
+}
+
+
+} // End Namespace
+

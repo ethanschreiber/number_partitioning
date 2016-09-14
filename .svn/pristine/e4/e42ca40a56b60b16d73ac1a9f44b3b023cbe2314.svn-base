@@ -1,0 +1,364 @@
+/*
+ * MultiwayNumberPartitioning
+ *
+ *  Created on: Jul 18, 2012
+ *      Author: ethan
+ */
+
+#include "PackingUtils.hpp"
+#include "ProgramOptionsUtils.hpp"
+#include "ss/SubsetSum.hpp"
+#include "ss/completions/SSCompletionGenerator.hpp"
+#include "ss/CGA.hpp"
+#include "ss/completions/IECompletionGenerator.hpp"
+#include "moffitt/Moffitt.hpp"
+#include "moffitt/MoffittRich.hpp"
+
+#include <boost/program_options.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <math.h>   // For ceil
+#include <stdint.h>
+#include <iomanip>
+#include <algorithm>
+#include <limits>
+
+using std::cout;
+using std::endl;
+using std::vector;
+using std::string;
+using std::ofstream;
+
+using namespace boost;
+namespace po = boost::program_options;
+
+void executeBP( const BinPackingProblem &problem,BinPackingStats &stats, const PackingOptions &packingOptions);
+void executeBelovBCP( const BinPackingProblem &problem,BinPackingStats &stats);
+uint64_t executeRNP(const PartitioningProblem &problem, BinPackingStats &stats);
+uint64_t kk (uint64_t a[], int n, int k, uint64_t sum);
+
+inline void execute( const BinPackingProblem &problem,BinPackingStats &stats, SolutionMethod method,const PackingOptions &packingOptions) {
+
+  SimpleTimer timer;
+  switch (method) {
+  case BIN_COMPLETION    : executeBP(problem,stats,packingOptions); break;
+  case BELOV_BCP         : executeBelovBCP(problem,stats); break;
+  default                : cout << "Error: Need to use BIN_COMPLETION or BELOV_BCP for binarySearch." << endl << endl; exit(0);
+  }
+
+  cout << " Num Bins: " << std::setw(2) << stats.numBins
+       << " Time: "     << std::setw(5) << timer.timeElapsed()
+       << " LB: "       << std::setw(2) << stats.lowerbound
+       << " Num Bins: " << std::setw(2) << stats.numBins
+       << " Cap: " << problem.capacity << endl;
+
+
+}
+
+//uint64_t branchAndBound(PartitioningProblem &problem, uint64_t minCapacity,uint64_t maxCapacity,
+//                     	  int numPartitions, const SolutionMethod method, uint64_t maxElement,
+//                     	  const PackingOptions &packingOptions) {
+//
+//
+//	uint64 allowedWaste = (maxCapacity - 1) * problem.K - problem.sum;
+//
+//	uint64_t residualCap = maxCapacity - problem.S[0];
+//	uint64_t lBoundSS = std::max((uint64_t) 1, residualCap - allowedWaste); // lower bound on sum of bin completions
+//	uint64_t uBoundSS = residualCap;
+//	return new ss::SSCompletionGenerator(remaining.begin(), remaining.size(), lBoundSS, uBoundSS, false);
+//
+//	woogie
+//}
+
+
+uint64_t binarySearch(BinPackingProblem &problem, uint64_t minCapacity,uint64_t maxCapacity,
+                     int numPartitions, const SolutionMethod method, uint64_t maxElement,
+                     const PackingOptions &packingOptions) {
+
+  std::cout.imbue(std::locale("")); // For printing 1,000 instead of 1000
+  BinPackingStats stats;
+
+//  cout << "Min: " << minCapacity << endl
+//       << "Max: " << maxCapacity << endl << endl;
+  // ----------------------------------------------------------------------------------
+  // If the maxElement is greater than 2^32, use schroeppel and shamir to only search
+  // possible subset sums. The idea is the possible values is sparse for large numbers
+  // ----------------------------------------------------------------------------------
+  //cout << endl;
+
+  if (packingOptions.useSchroeppelShamirBinarySearch) {
+
+    cout << "Using SS" << endl;
+    vector<uint64_t> SSSets;
+    int minIdx = 0;
+
+    std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in descending order
+    while (maxCapacity - minCapacity > 10000) {
+      cout << minCapacity << " " << maxCapacity << " " << std::setw(15) << maxCapacity - minCapacity << endl;
+
+      uint64_t midCapacity = (maxCapacity + minCapacity) / 2;
+      problem.capacity    = midCapacity;     // Set capacity
+
+
+      execute(problem,stats,method,packingOptions);
+
+      if (stats.numBins > numPartitions) {
+        minCapacity = midCapacity + 1;
+      } else {
+        maxCapacity = midCapacity;
+        //maxCapacity = stats.maxCapUsed;
+      }
+    }
+
+    cout << "Doing SS" << endl;
+    // Find the min and max capacity
+    std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in ascending order
+    int maxIdx = ss::generateSumsSS(problem.S,problem.N,minCapacity,maxCapacity,SSSets)-1;
+    std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in descending order
+
+    // ETHAN: This is a possible performance bottleneck!
+    std::sort( SSSets.begin(), SSSets.end(),std::less<uint64_t>());        // Sort results in ascending order
+
+
+
+    while (maxIdx > minIdx) {
+      //cout << SSSets[minIdx] << " " << SSSets[maxIdx] << " " << SSSets[maxIdx] - SSSets[minIdx] << endl;
+      int midIdx       = (maxIdx + minIdx) / 2;
+      problem.capacity = SSSets[midIdx];
+
+      execute(problem,stats,method,packingOptions);
+
+      if (stats.numBins > numPartitions) {
+        minIdx = midIdx + 1;
+      } else {
+        maxIdx = midIdx;
+        //maxCapacity = stats.maxCapUsed;
+      }
+    }
+
+    return SSSets[minIdx];
+
+
+    // ----------------------------------------------------------------------------------
+    // For small numbers with maxElement < 2^32, don't use Schroeppel and Shamir, just
+    // do a direct binary search
+    // ----------------------------------------------------------------------------------
+  } else {
+
+    std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in descending order
+    while (maxCapacity > minCapacity) {
+
+      uint64_t midCapacity = (maxCapacity + minCapacity) / 2;
+      problem.capacity    = midCapacity;     // Set capacity
+
+      execute(problem,stats,method,packingOptions);
+
+      if (stats.numBins > numPartitions) {
+        minCapacity = midCapacity + 1;
+      } else {
+        maxCapacity = midCapacity;
+      }
+
+      // TEMP
+      uint64_t CMin = problem.sum - (numPartitions-1) * (maxCapacity);
+      vector<uint64_t> SSSets;
+      std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in ascending order
+      int maxIdx = ss::generateSumsSS(problem.S,problem.N,CMin,maxCapacity,SSSets)-1;
+      std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in descending order
+
+      cout << "# SS Sets: " << SSSets.size() << endl
+           << "      Min: " << CMin << endl
+           << "      Max: " << maxCapacity << endl << endl;
+      // END TEMP
+
+    }
+    return minCapacity;
+  }
+}
+
+
+// ============================================================================
+// main reads the command line and calls execute.
+// ============================================================================
+
+int main(int argc, char *argv[])
+{
+  std::cout.imbue(std::locale("")); // For printing 1,000 instead of 1000
+
+  cout << "STARTING" << endl;
+  string inputFilename = UNSET_STRING;
+  int solutionMethodInt = UNSET_INT;
+  int inputK = UNSET_INT;
+  uint64_t minCapacity = UNSET_UINT64_T;
+  uint64_t maxCapacity = UNSET_UINT64_T;
+  PackingOptions packingOptions;
+  bool useLDS = false;
+
+  po::options_description commandOptions("Options");
+  commandOptions.add_options()
+  ("help,h"          , "produce help message")
+  ("num-partitions,k", po::value< int >(&inputK)            , "The number of partitions. If not specified, must read in partition file. If specified, must read in Packing file.")
+  ("method,m"        , po::value< int >(&solutionMethodInt) , "(required) The solution method (0=BSBP, 1=RNP, 2=BSBCP, 3=MOFFITT 4=MOFFITT_RICH 5=MOFFITT_CACHED.")
+  ("file,f"          , po::value< string >(&inputFilename)  , "(required) The input filename.")
+  ("lower-bound,l"   , po::value< uint64_t >(&minCapacity)   , "The lower bound for the binary search.")
+  ("upper-bound,u"   , po::value< uint64_t >(&maxCapacity)   , "The upper bound for the binary search.")
+  ("buffer-size,b"   , po::value< int >(&packingOptions.bufferSize)            , "(Default=50) The size of the buffer for inclusion/exclusion search")
+  ("lds,d"           , po::value(&packingOptions.useLDS)                          ->zero_tokens(),"Should we use limited discrepency search (flag, include or don't include.")
+  ("ss,s"            , po::value(&packingOptions.useSchroeppelShamir)             ->zero_tokens(),"Should we use Schroeppel and Shamir to generate completions? (flag)")
+  ("ssbs,t"          , po::value(&packingOptions.useSchroeppelShamirBinarySearch) ->zero_tokens(),"Should we use Schroeppel and Shamir to generate possible values for the binary search? (flag)")
+  ("printsol,p"      , po::value(&packingOptions.printSolution)                   ->zero_tokens(),"Should we print the solution? (flag)")
+  ("verbose,v"       , po::value(&packingOptions.isVerbose)                       ->zero_tokens(),"Should we display verbose output? (flag)")
+  ("classic-sort,c"  , po::value(&packingOptions.classicSort)->zero_tokens(),"Should we use the classic korf bin completion sort?");
+
+  std::ostringstream helpOut;
+  helpOut << endl << "Usage: " << argv[0] << " [options]" << endl << endl << commandOptions << endl;
+  try {
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, commandOptions), vm);
+    po::notify(vm);
+
+    optionRequired("method",solutionMethodInt,UNSET_INT);
+    optionRequired("file",inputFilename,UNSET_STRING);
+
+    if (argc == 1 || vm.count("help")) {
+      cout << helpOut.str();
+      return 0;
+    }
+
+  } catch(std::exception& e) {
+    cout << helpOut.str()
+         << "*** ERROR: " << e.what() << " ***"<< endl << endl;
+    return 1;
+  }
+
+  SolutionMethod method = getSolutionMethod(solutionMethodInt);
+
+  vector<string> inputFilenames = getInputFilenames(inputFilename);
+  string outputFilename = getOutputFilename(inputFilename, method,packingOptions, inputK);
+
+  // ===========================================================
+  // Check to see if some of the file already has been completed
+  // ===========================================================
+  int startIdx =
+  		(outputFilename.find("_all_") == string::npos) ? // If for single file
+			0 :																							 // compute it even if its been done
+  		countLines(outputFilename,"problem");						// Otherwise pickup if we are in the middle of a dir
+
+
+  // Open output file in append mode
+  std::ofstream out;
+  {
+    std::ostringstream os;
+    os << "File: " << outputFilename << " ";
+
+    if (startIdx >= inputFilenames.size()) {
+      os << "[File already complete!]";
+    } else if (startIdx > 0) {
+      os << "[Appending from problem " << startIdx << ".]";
+      out.open(outputFilename.c_str(), std::ios_base::app | std::ios_base::out);  // open in append
+    } else {
+      os << "[Starting from problem 0.]";
+      out.open(outputFilename.c_str(), std::ios_base::trunc | std::ios_base::out); // truncate file first
+    }
+    cout << os.str() << endl;
+  }
+
+  // ========================
+  // Loop through input files
+  // ========================
+  BinPackingStats stats;
+  for (size_t i=startIdx;i<inputFilenames.size();i++) {
+
+    string filename = inputFilenames[i];
+
+    // If k is specified, read in a PackingProblem and set K manually.
+    // If k is not specified, read in a partitioningproblem which includes K
+    PartitioningProblem *partitioningProblemPtr;
+
+    if (inputK == UNSET_INT) {
+      partitioningProblemPtr = new PartitioningProblem(filename);
+    } else {
+      PackingProblem packingProblem(filename);
+      partitioningProblemPtr = new PartitioningProblem(packingProblem,inputK);
+    }
+
+
+    PartitioningProblem &problem = *partitioningProblemPtr;
+
+    cout << "Initial K: " << problem.K << endl;
+
+    //cout << problem.problemName << ": ";
+    //cout.flush();
+    uint64_t result;
+
+    SimpleTimer timer;
+
+    //---------------------------------------------------------------------------------------
+    if ((method == BIN_COMPLETION) || (method == BELOV_BCP)) {
+    //---------------------------------------------------------------------------------------
+
+      std::sort( problem.S, problem.S+problem.N ,std::greater<uint64_t>());  // Sort input in descending order
+
+      // Find the max input element
+      uint64_t maxElement = *std::max_element(problem.S,problem.S + problem.N);
+
+      // If the minCapacity was not passed from the command line
+      if (minCapacity == UNSET_UINT64_T) {
+        // Can't be smaller than ([the sum of the elements] / [# partitions]) and also can't be smaller than maxElement
+        minCapacity = std::max((uint64_t) ceil((double) problem.sum / (double) problem.K),maxElement);
+
+        // Also can't be smaller than the kth + k+1st element
+        minCapacity = std::max(minCapacity,problem.S[problem.K] + problem.S[problem.K]);
+      }
+
+      if (maxCapacity == UNSET_UINT64_T) {
+        const int NUM_NODES = 1000000;
+        const int MAX_DISCREPENCIES = 5;
+        maxCapacity = executeCGA(problem, NUM_NODES,MAX_DISCREPENCIES);
+      }
+
+      BinPackingProblem binPackingProblem(problem,maxCapacity);
+
+      result = binarySearch(binPackingProblem,minCapacity,maxCapacity+1,problem.K,method,maxElement,packingOptions);
+
+    // --------------------------------------------------
+    } else if (method == RECURSIVE_NUMBER_PARTITIONING) {
+    // --------------------------------------------------
+      result = executeRNP(problem,stats);
+
+    } else if (method == MOFFITT) {
+
+      result = moffitt::executeMoffitt(problem,stats);
+      //result = moffitt::testMoffitt(problem,stats);
+
+
+    } else if (method == MOFFITT_RICH) {
+      result = executeMoffittRich(problem,stats);
+    } else if (method == MOFFITT_CACHED) {
+      cout << "IMPLEMENT ME!" << endl;
+      exit(0);
+    } else {
+      cout << "This should never happen, unknown solution method!" << endl;
+      exit(0);
+    }
+
+    out << problem.problemName <<  " " << timer.timeElapsed()  <<  " " <<  result << endl;
+
+    cout << "Answer: " << result << endl;
+    cout << "Time  : " << timer.timeElapsed() << endl;
+    minCapacity = UNSET_UINT64_T;    // For next iteration, make sure minCapacity is UNSET
+    maxCapacity = UNSET_UINT64_T;    // For next iteration, make sure maxCapacity is UNSET
+
+    delete partitioningProblemPtr;  // free memory
+
+
+  }
+  out.close();
+
+
+//  cout << "Count: " << ss::IECompletionGenerator::s_tmpCount << endl;
+  return 0;
+}

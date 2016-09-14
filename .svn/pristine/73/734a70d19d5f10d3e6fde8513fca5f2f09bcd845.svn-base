@@ -1,0 +1,20 @@
+#!/bin/bash
+#TIMEOUT=86400  # 1 day in seconds
+#TIMEOUT=259200 # 3 days in seconds
+
+minN=20
+maxN=100
+#declare -a K=(3 4 5 6 7 8 9 10 11 12) # For CIW
+
+declare -a METHOD=(0)  # 0 = CGA, 1=CKK
+
+NUM_PROBLEMS=100
+NUM_BITS=16
+
+for ((n = $minN; n<=$maxN; n++))                # For each target bin size  
+do
+    for method in ${METHOD[@]}
+    do
+	echo "./bin/Partitioning -f ./dat/partitioning/2_${NUM_BITS}_${n}_$NUM_PROBLEMS.np -m $method" 
+    done
+done

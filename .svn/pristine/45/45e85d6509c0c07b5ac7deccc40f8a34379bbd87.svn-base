@@ -1,0 +1,127 @@
+/*
+ * convertTxtToBPA.cpp
+ *
+ *  Created on: Sep 18, 2012
+ *      Author: ethan
+ */
+
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <algorithm>
+#include <fstream>
+#include <stdint.h>
+
+using std::cout;
+using std::endl;
+using std::vector;
+using std::string;
+
+bool endsWith(string s,string suffix) {
+
+  // Note: strtncmp returns 0 if the first prefix.size() elements
+  // are the same, hence the !
+
+  return ((s.size() >= suffix.size()) &&
+          (0 == s.compare(s.length() - suffix.length(), suffix.length(),suffix)));
+}
+string addTrailingSlash(string dirname) {
+  if (dirname[(dirname.size() - 1)] != '/') {
+    dirname.append("/");
+  }
+  return dirname;
+}
+
+
+vector<string> getInputFilenames(const string &inputDir) {
+  vector<string> filenames;   // The filenames to return
+
+  string outputFilename;
+  struct dirent *ent;                         // Dir Entry Struct
+
+  DIR *dir = opendir (inputDir.c_str());       // Open the directory
+  while ((ent = readdir (dir)) != NULL) {  // read the files
+    string inputFilename(ent->d_name);
+    if (endsWith(inputFilename,".txt")) {         // If the file is a valid input file
+      string filename = addTrailingSlash(inputDir);
+      filename.append(ent->d_name);
+      filenames.push_back(filename);
+    }
+  }
+  std::sort(filenames.begin(),filenames.end());
+  return filenames;
+}
+string getFilename(string fullFilename) {
+  string fullpath(fullFilename);
+  size_t last = fullpath.find_last_of('/');
+  return fullpath.substr(last+1,fullpath.size());
+}
+
+string getDirOfFile(string filename) {
+  string fullpath(filename);
+  size_t last = fullpath.find_last_of('/');
+  return fullpath.substr(0,last+1);
+}
+
+string getOutputFilename(string inputFilename,string outputDir) {
+  string problemNumber  = inputFilename.substr(inputFilename.size()-5,1);
+  string outputFilename = addTrailingSlash(outputDir);
+  string filenameOnly = getFilename(inputFilename);
+  outputFilename.append(filenameOnly.substr(0,filenameOnly.size()-6));
+  outputFilename.append("/problem").append(problemNumber).append(".bpa");
+  return outputFilename;
+}
+int main(int argc, char *argv[]) {
+  if (argc != 3) {
+   cout << endl
+        << " Usage: " << argv[0] << " [input dir] [output dir]" << endl << endl;
+   exit(0);
+  }
+
+  char *& inputDir = argv[1];
+  char *& outputDir = argv[2];
+
+  umask(0);               // Set the umask for mkdir to have correct permissions
+  mkdir(outputDir, 0776);  // make the directory if it does not already exist
+
+  vector<string> filenames = getInputFilenames(inputDir);
+
+  for (size_t i=0;i<filenames.size();i++) {
+    string &filename = filenames[i];
+    string outputFilename = getOutputFilename(filename,outputDir);
+    cout << "Input : " << filename << endl
+         << "outdir: " << getDirOfFile(outputFilename) << endl
+         << "Output: " <<  outputFilename << endl << endl;
+    umask(0);               // Set the umask for mkdir to have correct permissions
+    mkdir(getDirOfFile(outputFilename).c_str(), 0776);  // make the directory if it does not already exist
+
+    std::ifstream inFile(filename.c_str());
+    std::ofstream outFile(outputFilename.c_str());
+    int K;
+    int N;
+    vector<int64_t> numbers;
+    int64_t sum = 0;
+
+    inFile >> K >> N;
+    for (int i=0;i<N;i++) {
+      int number;
+      inFile >> number;
+      numbers.push_back(number);
+      sum += number;
+    }
+
+    outFile << filename.substr(0,filename.size()-4) << endl
+            << N << " " << sum << endl;
+
+    for (int i=0;i<N;i++) {
+      outFile << numbers[i] << endl;
+    }
+
+    inFile.close();
+    outFile.close();
+
+  }
+}

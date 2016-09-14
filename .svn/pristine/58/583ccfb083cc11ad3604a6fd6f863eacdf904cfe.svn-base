@@ -1,0 +1,8 @@
+#!/bin/bash
+
+./bin/ProcessExperiments ./dat/2_48/ 3 6 0 1 2
+./bin/ProcessExperiments ./dat/2_48/ 7 10 0 1 2
+
+./bin/ProcessExperiments ./dat/2_48/ 3 10 0 1 2
+#./bin/ProcessExperiments ./dat/2_48/ 3 10 0 3
+#./bin/ProcessExperiments ./dat/2_16/ 3 10 0 1 2

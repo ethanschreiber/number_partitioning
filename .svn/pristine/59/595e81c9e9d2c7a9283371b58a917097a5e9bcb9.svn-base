@@ -1,0 +1,109 @@
+/*
+ * MoffittCached.hpp
+ *
+ *  Created on: Aug 20, 2013
+ *      Author: ethan
+ */
+
+#ifndef MOFFITT_CACHED_HPP_
+#define MOFFITT_CACHED_HPP_
+
+#include "../ss/SubsetSum.hpp"
+#include "../ss/Schroeppel_Shamir.hpp"
+#include "../PackingUtils.hpp"
+#include "Moffitt.hpp"
+
+
+#include <stdint.h>
+#include <limits>
+#include <iostream>
+
+namespace moffitt {
+
+uint64_t executeMoffittCached(const PartitioningProblem &problem, BinPackingStats &stats);
+
+// ================
+// Utility Function
+// ================
+template <typename BitsetType>
+string getBits(const BitsetType &bitset,int groupSize,int numBits) {
+  std::ostringstream out;
+  for (int i=numBits-1;i>=0;i--) {
+    out << bitset[i];
+    if (i % groupSize == 0 && i > 0) {
+      out << " ";
+    }
+  }
+  return out.str();
+}
+
+
+// ============
+// CachedIENode
+// ============
+struct CachedIENode {
+
+  CachedIENode *included;
+  CachedIENode *excluded;
+  uint8_t ieIdx;  // The index of the element to include/exclude
+
+
+  CachedIENode() : included(NULL), excluded(NULL) {
+  }
+  CachedIENode(const uint8_t ieIdx) : ieIdx(ieIdx), included(NULL), excluded(NULL) {
+  }
+
+  CachedIENode(const uint8_t ieIdx, CachedIENode *included, CachedIENode *excluded) :
+    ieIdx(ieIdx), included(included), excluded(excluded) {
+
+  }
+};
+
+// ===============
+// MoffittCachedIE
+// ===============
+class MoffittCached;    // Forward reference
+
+class MoffittCachedIE {
+private :
+  CachedIENode *m_root;
+  MoffittCached *m_moffittCached;
+  const vector<uint64_t> m_S;
+
+protected :
+
+  void clear(CachedIENode *node);
+  uint64_t inclusionExclusion(CachedIENode *node, const int K, ss::Bitset &elements,
+                  const uint64_t remainingSum, const uint64_t includedSum,
+                  uint64_t CMin, uint64_t CBest, uint64_t maxSoFar);
+public :
+  MoffittCachedIE(MoffittCached *moffittCached, const vector<uint64_t> &S,
+                  uint64_t min, uint64_t max);
+~MoffittCachedIE();
+
+  void insert(vector<ss::SSSetNode> &v);
+  void clear();
+  void push_back(const ss::SSSetNode &node);
+
+
+  uint64_t inclusionExclusion(const int K, ss::Bitset elements, const uint64_t elementsSum,
+                              uint64_t CMin, uint64_t CBest, uint64_t maxSoFar);
+};
+
+
+
+class MoffittCached {
+private :
+  MoffittCachedIE m_cachedIE;    // The cached inclusion exclusion class
+  int m_K;                // The total number of bins in the problem
+public :
+  uint64_t search(const int K, ss::Bitset &elements,
+                        const uint64_t elementsSum,
+                        const uint64_t CBest, uint64_t maxSoFar);
+
+  MoffittCached(const vector<uint64_t> &S, uint64_t min, uint64_t max, int K);
+};
+
+} // End Namespace
+
+#endif /* MOFFITT_HPP_ */

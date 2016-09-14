@@ -1,0 +1,20 @@
+problem0 0 153 1 0.00
+Perfect: 153
+problem1 0.00 135 1 0.00
+Perfect: 135
+problem2 0.00 165 1 0.00
+Perfect: 165
+problem3 0.00 179 1 0.00
+Perfect: 179
+problem4 0.00 145 1 0.00
+Perfect: 145
+problem5 0.00 191 1 0.00
+Perfect: 191
+problem6 0.00 157 1 0.00
+Perfect: 157
+problem7 0.00 139 1 0.00
+Perfect: 139
+problem8 0.00 105 1 0.00
+Perfect: 105
+problem9 0.00 183 1 0.00
+Perfect: 183

@@ -1,0 +1,123 @@
+/*
+ * MoffittIE.cpp
+ *
+ *  Created on: Sep 19, 2013
+ *      Author: ethan
+ */
+
+#include "MoffittIE.hpp"
+#include "MoffittCachedIE.hpp"
+#include <iomanip>
+namespace moffitt {
+uint64_t tmpIECount[MAX_K];
+uint64_t tmpIESearchCount[MAX_K];
+
+// TODO: Don't need included, should probably remove it
+uint64_t inclusionExclusion(const int K, const size_t SIdx,
+                            const uint64_t CMin, uint64_t CBest, uint64_t maxSoFar,
+                            const vector<uint64_t> &S , const uint64_t SSum,
+                            vector<uint64_t> &included, const uint64_t includedSum,
+                            vector<uint64_t> &excluded, const uint64_t excludedSum) {
+
+  tmpIECount[K]++;
+  // ---------------------------------------------
+  // All elements included or excluded (Base Case)
+  // ---------------------------------------------
+  if (SIdx == S.size()) {
+    if (includedSum >= CMin && includedSum < CBest) {         // And the sum is better than the best found so far
+
+      tmpIESearchCount[K]++;
+      uint64_t CBestBefore = CBest;
+      CBest = search(K-1,                                     // Go to the next bin
+                     excluded, excludedSum,
+                     CBest, std::max(maxSoFar,includedSum));  // If setSum > maxSoFar, update maxSoFar
+
+      // *** DEBUG BEGIN ***
+      if (K >= 9 && CBest != CBestBefore) {
+        cout << "K           : " << K << endl
+             << "CBest Before: " << CBestBefore << endl
+             << "Cbest Now   : " << CBest << endl;
+        {
+          uint64_t CMin = (includedSum + excludedSum) - (K-1) * (CBest-1);
+          //MoffittCachedIE test(S,CMin,CBest-1);
+
+          for (int i=0;i<MAX_K;i++) {
+            if (tmpIESearchCount[i] > 0) {
+              cout << std::setw(2) << i << ": "
+                   << std::setw(12) << tmpIESearchCount[i] << "  "
+                   << std::setw(12) << tmpIECount[i] << endl;
+            }
+          }
+          {
+             for (int i=0;i<MAX_K;i++) {
+              tmpIECount[i] = 0;
+              tmpIESearchCount[i] = 0;
+            }
+          }
+        }
+        cout << "--------------------------" << endl;
+        // *** DEBUG END ***
+
+      }
+    }
+  } else {
+
+    //
+    const uint64_t includeRestSum       = includedSum + SSum; // Sum with all remaining
+    if (includeRestSum >= CMin) {
+
+      // --------------------------------------------
+      // If the rest fit in this bin, put them all in
+      // --------------------------------------------
+      if (includeRestSum  < maxSoFar) {
+
+        uint64_t newValue = std::max(includeRestSum,
+                                     inclusionExclusion( K, S.size(), CMin, CBest, maxSoFar, S, 0,
+                                                         included, includeRestSum, excluded, excludedSum));
+
+        CBest = std::min(CBest,newValue);
+
+      } else {
+
+        //----------
+        // Inclusion
+        //----------
+        const uint64_t newIncludedSum  = includedSum  + S[SIdx]; // Inclusion sum
+        const uint64_t newSSum         = SSum - S[SIdx];         // Inclusion sum remaining
+
+        if (newIncludedSum < CBest) {
+          included.push_back(S[SIdx]);
+          uint64_t newValue = std::max(newIncludedSum,
+                                       inclusionExclusion(K, SIdx+1, CMin, CBest, maxSoFar, S, newSSum,
+                                                          included, newIncludedSum, excluded, excludedSum));
+          CBest = std::min(CBest,newValue);
+          included.pop_back();
+        }
+
+        //----------
+        // Exclusion
+        //----------
+        if (maxSoFar    < CBest &&
+            includedSum < CBest) {
+          uint64_t newCMin;               // For Moffit's pruning rule
+          if (newIncludedSum < CBest && newIncludedSum >= CMin) {
+            newCMin = newIncludedSum + 1;
+          } else {
+            newCMin = CMin;
+          }
+
+          excluded.push_back(S[SIdx]);
+          uint64_t newValue = std::max(includedSum,
+                                       inclusionExclusion(K, SIdx+1, newCMin, CBest, maxSoFar, S, newSSum,
+                                                          included, includedSum, excluded, excludedSum + S[SIdx]));
+
+          CBest = std::min(CBest,newValue);
+          excluded.pop_back();
+        }
+      }
+    }
+  }
+  return CBest;
+}
+
+} // End Namespace
